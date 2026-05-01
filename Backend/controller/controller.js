@@ -28,3 +28,8 @@ exports.login=async(req,res)=>{
         res.json({message:"Somting Went Wrong"});
     }
 };
+exports.getProfile=(req,res)=>{
+    res.json({
+        message:"This is protected data",user:req.user
+    });
+};
