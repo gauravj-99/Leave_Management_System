@@ -1,8 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const {register, login, getProfile}=require("../controller/controller");
+const {register, login, getProfile,applyleave,getMyLeaves,updateLeaveStatus}=require("../controller/controller");
 const authMiddleware=require("./middleware/middleware");
 router.post("/register", register);
 router.post("/login",login);
 router.get("/profile", authMiddleware,getProfile);
+router.post("/apply-leave",authMiddleware,applyLeave);
+router.get("/my-leaves",authMiddleware,getMyLeaves);
+router.post("/update-leave",authMiddleware,updateLeaveStatus);
 module.exports=router;
