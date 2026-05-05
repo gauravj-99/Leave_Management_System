@@ -1,5 +1,5 @@
 const mongoose =require("mongoose");
-const leaveSchema=new mongoose.schema({
+const leaveSchema=new mongoose.Schema({
     userid: {
         type: mongoose.Schema.Types.ObjectId,
         ref:"user"
@@ -8,6 +8,7 @@ const leaveSchema=new mongoose.schema({
     toDate:String,
     reason:String,
     status:{
+        type:String,
         enum:["pending", "approved", "reject"],
         default:"pending"
     }

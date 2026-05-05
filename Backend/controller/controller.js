@@ -1,7 +1,8 @@
 const User = require("../models/user");
-const leave=require("../models/leave");
+const Leave=require("../models/leave");
 const bcrypt = require("bcryptjs");
 const jwt=require("jsonwebtoken");
+const mongoose=require("mongoose");
 exports.register= async(req,res)=>{
     const{name, email,password,role}=req.body;
     const hashedPassword=await
@@ -9,7 +10,7 @@ exports.register= async(req,res)=>{
     const newUser= new User({name, email, password:hashedPassword, role});
     await newUser.save();
     res.json({message:"user registered"});
-};
+};2
 exports.login=async(req,res)=>{
     const{email,password}=req.body;
     try{
@@ -34,37 +35,65 @@ exports.getProfile=(req,res)=>{
         message:"This is protected data",user:req.user
     });
 };
-exports.applyleave= async(req, res)=>{
-    try{
-        const{ fromDate, toDate,reason}=req.body;
-        const newLeave = new leave({
-            userid:req.user.id,
-            fromDate,
-            toDate,
-            reason
-        });
-        await newLeave.save();
-        res.json({ message: "Leave Applied"});
-    }catch(err){
-        res.json({messasge:"error"});
-    }
+exports.applyLeave = async (req, res) => {
+  const { fromDate, toDate, reason } = req.body;
+
+  if (!fromDate || !toDate || !reason) {
+    return res.json({ message: "All fields are required" });
+  }
+
+  try {
+    const newLeave = new Leave({
+      userid: req.user.id,
+      fromDate,
+      toDate,
+      reason
+    });
+
+    await newLeave.save();
+    res.json({ message: "Leave Applied" });
+  } catch (err) {
+    res.json({ message: "Error applying leave" });
+  }
 };
 exports.getMyLeaves=async(req,res)=>{
     try{
-        const leaves= await leave.find({ userid:
-            req.user.id
+        const leaves= await Leave.find({ 
+            
+            userid:new mongoose.Types.ObjectId(req.user.id)
         });
+        console.log("user", req.user);
         res.json(leaves);
     }catch(err){
         res.json({meaasge:"Error fetching leaves"});
     }
 };
-exports.updateLeavestatus=async(req,res)=>{
+exports.updateLeaveStatus = async (req, res) => {
+  if (req.user.role !== "manager") {
+    return res.json({ message: "Only manager can update" });
+  }
+
+  try {
+    const { leaveId, status } = req.body;
+
+    await Leave.findByIdAndUpdate(leaveId, { status });
+    res.json({ message: "Leave status updated" });
+  } catch (err) {
+    res.json({ message: "Error updating leave" });
+  }
+};
+exports.getAllLeaves=async(req,res)=>{
     try{
-        const{ leaveId,status}=req.body;
-        await leave.findByIdAndUpdate(leaveId,{status});
-        res.json({message:"leave status update"});
+        if(req.user.role!=="manager"){
+            return res.json({message:"Access denied"});
+        }
+        const leaves=await
+        Leave.find().populate("userid","name email");
+        res.json(leaves);
+
     }catch(err){
-        rez.json({message:"error updating leave"});
+        console.log(err);
+        res.json({message:"Error fetching all leaves"});
     }
+
 };

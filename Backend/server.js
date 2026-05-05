@@ -10,8 +10,7 @@ app.use(express.json());
 const routes=require("./routes/routes");
 app.use("/api/auth",routes);
 
-mongoose.connect("mongodb://127.0.0.1:27017/leave_management")
-.then(()=>console.log("mongodb connected"))
+mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/leave_management").then(()=>console.log("mongodb connected"))
 .catch(err=>console.log(err));
 
 
