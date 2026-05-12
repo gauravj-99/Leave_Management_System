@@ -12,4 +12,20 @@ API.interceptors.request.use((req) => {
   return req;
 });
 
+API.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/";
+    }
+    const message = err.response?.data?.message || err.message || "An error occurred";
+    return Promise.reject(new Error(message));
+  }
+);
+
 export default API;
+export const handleApiError = (error) => {
+  return error.message || "An error occurred. Please try again.";
+};

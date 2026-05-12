@@ -5,12 +5,11 @@ const jwt=require("jsonwebtoken");
 const mongoose=require("mongoose");
 exports.register= async(req,res)=>{
     const{name, email,password,role}=req.body;
-    const hashedPassword=await
-    bcrypt.hash(password, 10);
+    const hashedPassword=await bcrypt.hash(password, 10);
     const newUser= new User({name, email, password:hashedPassword, role});
     await newUser.save();
-    res.json({message:"user registered"});
-};2
+    res.status(201).json({message:"user registered"});
+};
 exports.login=async(req,res)=>{
     const{email,password}=req.body;
     try{
@@ -22,12 +21,23 @@ exports.login=async(req,res)=>{
         if(!isMatch){
             return res.json({message: "Password wrong"});
         }
-        const token= jwt.sign(
-            {id:foundUser._id, role:foundUser.role}, "secretkey", {expiresIn:"1d"}
+        const token = jwt.sign(
+            {id: foundUser._id, role: foundUser.role},
+            "secretkey",
+            {expiresIn: "1d"}
         );
-        res.json({message:"YOu are login",token});
-    }catch(err){
-        res.json({message:"Somting Went Wrong"});
+        res.json({
+            message: "You are logged in",
+            token,
+            user: {
+                id: foundUser._id,
+                name: foundUser.name,
+                email: foundUser.email,
+                role: foundUser.role,
+            },
+        });
+    } catch (err) {
+        res.status(500).json({message:"Something Went Wrong"});
     }
 };
 exports.getProfile=(req,res)=>{
