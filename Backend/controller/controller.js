@@ -1,31 +1,39 @@
 const User = require("../models/user");
-const Leave=require("../models/leave");
+const Leave = require("../models/leave");
 const bcrypt = require("bcryptjs");
-const jwt=require("jsonwebtoken");
-const mongoose=require("mongoose");
-exports.register= async(req,res)=>{
-    const{name, email,password,role}=req.body;
-    const hashedPassword=await bcrypt.hash(password, 10);
-    const newUser= new User({name, email, password:hashedPassword, role});
-    await newUser.save();
-    res.status(201).json({message:"user registered"});
+const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
+
+const JWT_SECRET = process.env.JWT_SECRET || "secretkey";
+
+exports.register = async (req, res, next) => {
+    try {
+        const { name, email, password, role } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ name, email, password: hashedPassword, role });
+        await newUser.save();
+        res.status(201).json({ message: "user registered" });
+    } catch (err) {
+        next(err);
+    }
 };
-exports.login=async(req,res)=>{
-    const{email,password}=req.body;
-    try{
-        const foundUser=await User.findOne({email});
-        if(!foundUser){
-            return res.json({message: "User not found"});
+
+exports.login = async (req, res, next) => {
+    const { email, password } = req.body;
+    try {
+        const foundUser = await User.findOne({ email });
+        if (!foundUser) {
+            const err = new Error("User not found");
+            err.status = 404;
+            return next(err);
         }
-        const isMatch= await bcrypt.compare(password, foundUser.password);
-        if(!isMatch){
-            return res.json({message: "Password wrong"});
+        const isMatch = await bcrypt.compare(password, foundUser.password);
+        if (!isMatch) {
+            const err = new Error("Invalid credentials");
+            err.status = 401;
+            return next(err);
         }
-        const token = jwt.sign(
-            {id: foundUser._id, role: foundUser.role},
-            "secretkey",
-            {expiresIn: "1d"}
-        );
+        const token = jwt.sign({ id: foundUser._id, role: foundUser.role }, JWT_SECRET, { expiresIn: "1d" });
         res.json({
             message: "You are logged in",
             token,
@@ -37,73 +45,112 @@ exports.login=async(req,res)=>{
             },
         });
     } catch (err) {
-        res.status(500).json({message:"Something Went Wrong"});
+        next(err);
     }
 };
-exports.getProfile=(req,res)=>{
-    res.json({
-        message:"This is protected data",user:req.user
-    });
+
+exports.getProfile = (req, res) => {
+    res.json({ message: "This is protected data", user: req.user });
 };
-exports.applyLeave = async (req, res) => {
-  const { fromDate, toDate, reason } = req.body;
 
-  if (!fromDate || !toDate || !reason) {
-    return res.json({ message: "All fields are required" });
-  }
+exports.applyLeave = async (req, res, next) => {
+    try {
+        const { fromDate, toDate, reason } = req.body;
 
-  try {
-    const newLeave = new Leave({
-      userid: req.user.id,
-      fromDate,
-      toDate,
-      reason
-    });
-
-    await newLeave.save();
-    res.json({ message: "Leave Applied" });
-  } catch (err) {
-    res.json({ message: "Error applying leave" });
-  }
-};
-exports.getMyLeaves=async(req,res)=>{
-    try{
-        const leaves= await Leave.find({ 
-            
-            userid:new mongoose.Types.ObjectId(req.user.id)
-        });
-        console.log("user", req.user);
-        res.json(leaves);
-    }catch(err){
-        res.json({meaasge:"Error fetching leaves"});
-    }
-};
-exports.updateLeaveStatus = async (req, res) => {
-  if (req.user.role !== "manager") {
-    return res.json({ message: "Only manager can update" });
-  }
-
-  try {
-    const { leaveId, status } = req.body;
-
-    await Leave.findByIdAndUpdate(leaveId, { status });
-    res.json({ message: "Leave status updated" });
-  } catch (err) {
-    res.json({ message: "Error updating leave" });
-  }
-};
-exports.getAllLeaves=async(req,res)=>{
-    try{
-        if(req.user.role!=="manager"){
-            return res.json({message:"Access denied"});
+        if (!fromDate || !toDate || !reason) {
+            const err = new Error("All fields are required");
+            err.status = 400;
+            return next(err);
         }
-        const leaves=await
-        Leave.find().populate("userid","name email");
-        res.json(leaves);
 
-    }catch(err){
-        console.log(err);
-        res.json({message:"Error fetching all leaves"});
+        const newLeave = new Leave({ userid: req.user.id, fromDate, toDate, reason });
+        await newLeave.save();
+        res.status(201).json({ message: "Leave Applied", leave: newLeave });
+    } catch (err) {
+        next(err);
     }
+};
 
+exports.getMyLeaves = async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = Math.min(parseInt(req.query.limit, 10) || 10, 100);
+        const skip = (page - 1) * limit;
+
+        const query = { userid: new mongoose.Types.ObjectId(req.user.id) };
+
+        const [leaves, total] = await Promise.all([
+            Leave.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }),
+            Leave.countDocuments(query),
+        ]);
+
+        res.json({ data: leaves, meta: { page, limit, total, pages: Math.ceil(total / limit) } });
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.updateLeaveStatus = async (req, res, next) => {
+    try {
+        if (req.user.role !== "manager") {
+            const err = new Error("Only manager can update");
+            err.status = 403;
+            return next(err);
+        }
+
+        const { leaveId, status, managerRemarks } = req.body;
+        const update = { status };
+        if (managerRemarks) update.managerRemarks = managerRemarks;
+
+        const updated = await Leave.findByIdAndUpdate(leaveId, update, { new: true });
+        if (!updated) {
+            const err = new Error("Leave not found");
+            err.status = 404;
+            return next(err);
+        }
+
+        res.json({ message: "Leave status updated", leave: updated });
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.getAllLeaves = async (req, res, next) => {
+    try {
+        if (req.user.role !== "manager") {
+            const err = new Error("Access denied");
+            err.status = 403;
+            return next(err);
+        }
+
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = Math.min(parseInt(req.query.limit, 10) || 10, 100);
+        const skip = (page - 1) * limit;
+
+        const { search, status, fromDate, toDate, sortBy } = req.query;
+        const query = {};
+
+        if (status) query.status = status;
+        if (fromDate || toDate) query.fromDate = {};
+        if (fromDate) query.fromDate.$gte = new Date(fromDate);
+        if (toDate) query.fromDate.$lte = new Date(toDate);
+        if (search) {
+            query.$or = [
+                { reason: { $regex: search, $options: "i" } },
+            ];
+        }
+
+        const sort = {};
+        if (sortBy === "oldest") sort.createdAt = 1;
+        else sort.createdAt = -1;
+
+        const [leaves, total] = await Promise.all([
+            Leave.find(query).populate("userid", "name email").skip(skip).limit(limit).sort(sort),
+            Leave.countDocuments(query),
+        ]);
+
+        res.json({ data: leaves, meta: { page, limit, total, pages: Math.ceil(total / limit) } });
+    } catch (err) {
+        next(err);
+    }
 };

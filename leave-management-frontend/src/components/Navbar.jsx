@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 function Navbar() {
@@ -13,22 +13,26 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <div className="navbar-brand">
-        <h1>Leave Management System</h1>
-      </div>
-      <div className="navbar-links">
-        {!user ? (
-          <>
-            <Link to="/" className="nav-link">Login</Link>
-            <Link to="/register" className="nav-link">Register</Link>
-          </>
-        ) : (
-          <>
-            <Link to="/dashboard" className="nav-link">Dashboard</Link>
-            <span className="nav-user">Welcome, {user.name || user.email}</span>
-            <button onClick={handleLogout} className="btn-logout">Logout</button>
-          </>
-        )}
+      <div className="navbar-inner">
+        <div className="navbar-brand">
+          <h1>Leave Management</h1>
+          <p>Easy time-off tracking for your team</p>
+        </div>
+
+        <div className="navbar-links">
+          {!user ? (
+            <>
+              <NavLink to="/" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Login</NavLink>
+              <NavLink to="/register" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Register</NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink to="/dashboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Dashboard</NavLink>
+              <span className="nav-user">Hello, {user.name || user.email}</span>
+              <button onClick={handleLogout} className="btn-logout">Logout</button>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );

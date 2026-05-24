@@ -1,19 +1,24 @@
 const jwt = require("jsonwebtoken");
-const authMiddleware=(req,res,next)=>{
-    try{
+const { JWT_SECRET } = process.env;
 
-    const token =req.headers.authorization;
-    if(!token || !token.startsWith("Bearer")){
-        return res.json({message: "no token, access denoid"});
+const authMiddleware = (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            const err = new Error("No token provided");
+            err.status = 401;
+            throw err;
+        }
+
+        const token = authHeader.split(" ")[1];
+        const secret = JWT_SECRET || "secretkey";
+        const decoded = jwt.verify(token, secret);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        error.status = error.status || 401;
+        next(error);
     }
-    const actualToken =token.split(" ")[1];
-    const decoded = jwt.verify(actualToken,"secretkey");
-    req.user=decoded;
-    next();
-
-}catch(err){
-    res.json({message: "invalid token "});
-}
-
 };
-module.exports=authMiddleware;
+
+module.exports = authMiddleware;
