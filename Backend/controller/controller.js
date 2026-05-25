@@ -3,7 +3,6 @@ const Leave = require("../models/leave");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
-
 const JWT_SECRET = process.env.JWT_SECRET || "secretkey";
 
 exports.register = async (req, res, next) => {
