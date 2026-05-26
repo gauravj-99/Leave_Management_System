@@ -23,7 +23,8 @@ function AllLeaves() {
     const fetchLeaves = async () => {
       try {
         const res = await API.get("/all_leaves");
-        setLeaves(res.data || []);
+        // backend responds with { data: [...], meta: {...} }
+        setLeaves((res.data && res.data.data) || []);
         setError("");
       } catch (err) {
         setError(handleApiError(err));

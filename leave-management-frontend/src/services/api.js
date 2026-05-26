@@ -7,7 +7,8 @@ const API = axios.create({
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem("token");
   if (token) {
-    req.headers.Authorization = `Bearer ${token}`;
+    req.headers = req.headers || {};
+    req.headers["Authorization"] = `Bearer ${token}`;
   }
   return req;
 });
@@ -20,7 +21,7 @@ API.interceptors.response.use(
       localStorage.removeItem("user");
       window.location.href = "/";
     }
-    const message = err.response?.data?.message || err.message || "An error occurred";
+    const message = err.response?.data?.message || err.response?.data?.error || err.message || "An error occurred";
     return Promise.reject(new Error(message));
   }
 );
