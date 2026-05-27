@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api/auth"
+  baseURL: "http://leavemanagementsystem-production-cfa4.up.railway.app/api/auth"
 });
 
 API.interceptors.request.use((req) => {
