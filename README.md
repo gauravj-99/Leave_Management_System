@@ -224,6 +224,4 @@ Feel free to fork the repository and submit pull requests for improvements or ne
 For support or questions, please reach out through the repository owner or project maintainer.
 ```
 
-If you want, I can also make this into a more polished version with badges, screenshots, or a shorter production-ready format.
-I also have to paste some screen shot of my project.
-
+If you want, I can also make this into a more polished version with badges, screenshots, or a shorter production-ready
