@@ -217,7 +217,3 @@ This project is currently unlicensed unless added later.
 
 ## Contributing
 
-Feel free to fork the repository and submit pull requests for improvements or new features.
-
-## Contact
-
