@@ -211,9 +211,4 @@ The backend includes:
 - Manager-only routes require a valid JWT token with `role: "manager"`.
 - The application uses MongoDB for persistence, so ensure the database is reachable before starting the API.
 
-## License
-
-This project is currently unlicensed unless added later.
-
-## Contributing
 
