@@ -209,6 +209,6 @@ The backend includes:
 
 - The frontend and backend are separate apps and must be started independently.
 - Manager-only routes require a valid JWT token with `role: "manager"`.
-- The application uses MongoDB for persistence, so ensure the database is reachable before starting the API.
+
 
 
